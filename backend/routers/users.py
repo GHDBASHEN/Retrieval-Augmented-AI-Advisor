@@ -3,6 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from pydantic import BaseModel
 import secrets
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 from database import get_db
 from models import User
@@ -11,9 +14,11 @@ router = APIRouter(prefix="/users", tags=["Users"])
 
 class UserCreate(BaseModel):
     email: str
+    password: str
 
-class UserResponse(UserCreate):
+class UserResponse(BaseModel):
     id: int
+    email: str
     api_key: str
 
     class Config:
@@ -26,8 +31,9 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
         
+    hashed_pwd = pwd_context.hash(user.password)
     api_key = secrets.token_urlsafe(32)
-    new_user = User(email=user.email, api_key=api_key)
+    new_user = User(email=user.email, hashed_password=hashed_pwd, api_key=api_key)
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
@@ -45,6 +51,6 @@ async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):
 async def login_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == user.email))
     existing_user = result.scalars().first()
-    if not existing_user:
-        raise HTTPException(status_code=404, detail="User not found. Please register.")
+    if not existing_user or not pwd_context.verify(user.password, existing_user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
     return existing_user
