@@ -5,7 +5,7 @@ export default function Home() {
   const [botName, setBotName] = useState('');
   const [description, setDescription] = useState('');
   const [url, setUrl] = useState('');
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [isTraining, setIsTraining] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
   const [createdBotId, setCreatedBotId] = useState<number | null>(null);
@@ -45,16 +45,18 @@ export default function Home() {
       const botId = botData.id;
       setCreatedBotId(botId);
 
-      // 3. Upload file if exists
-      if (file) {
-        setStatusMsg(`Uploading and parsing ${file.name}...`);
-        const formData = new FormData();
-        formData.append('file', file);
-        const fileRes = await fetch(`http://localhost:8000/bots/${botId}/ingest-file`, {
-          method: 'POST',
-          body: formData
-        });
-        if (!fileRes.ok) throw new Error("Failed to process file");
+      // 3. Upload files if exist
+      if (files.length > 0) {
+        for (const f of files) {
+          setStatusMsg(`Uploading and parsing ${f.name}...`);
+          const formData = new FormData();
+          formData.append('file', f);
+          const fileRes = await fetch(`http://localhost:8000/bots/${botId}/ingest-file`, {
+            method: 'POST',
+            body: formData
+          });
+          if (!fileRes.ok) throw new Error(`Failed to process file ${f.name}`);
+        }
       }
 
       // 4. Ingest URL if exists
@@ -134,27 +136,35 @@ export default function Home() {
                 <div className="space-y-3">
                   <input
                     type="file"
-                    accept=".pdf,.csv"
+                    accept=".pdf,.csv,.txt"
+                    multiple
                     className="hidden"
                     ref={fileInputRef}
                     onChange={(e) => {
                       if (e.target.files && e.target.files.length > 0) {
-                        setFile(e.target.files[0]);
+                        setFiles(prev => [...prev, ...Array.from(e.target.files as FileList)]);
                       }
                     }}
                   />
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full flex items-center justify-center p-4 rounded-xl border border-dashed border-white/20 hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all text-neutral-400 group"
+                    className="w-full flex flex-col items-center justify-center p-4 rounded-xl border border-dashed border-white/20 hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all text-neutral-400 group"
                   >
-                    <span className="text-sm font-medium">{file ? `Selected: ${file.name}` : 'Click to Upload PDF/CSV'}</span>
+                    <span className="text-sm font-medium">
+                      {files.length > 0 ? `${files.length} file(s) selected (Click to add more)` : 'Click to Upload Multiple Files'}
+                    </span>
+                    {files.length > 0 && (
+                      <span className="text-xs text-indigo-400 mt-1">
+                        {files.map(f => f.name).join(', ')}
+                      </span>
+                    )}
                   </button>
 
                   <input
                     type="text"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
-                    placeholder="Provide a Web URL to scrape"
+                    placeholder="Provide an optional Web URL to scrape"
                     className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all placeholder:text-neutral-600 shadow-inner"
                   />
                 </div>
