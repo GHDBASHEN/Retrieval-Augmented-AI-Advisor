@@ -1,6 +1,6 @@
 import os
 from typing import List, Dict
-from langchain_community.document_loaders import PyPDFLoader, WebBaseLoader
+from langchain_community.document_loaders import PDFPlumberLoader, WebBaseLoader, TextLoader, CSVLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 def process_file_or_url(source: str, source_type: str, bot_id: int) -> List[Dict]:
@@ -9,11 +9,15 @@ def process_file_or_url(source: str, source_type: str, bot_id: int) -> List[Dict
     source_type can be 'pdf' or 'url'.
     """
     if source_type == 'pdf':
-        loader = PyPDFLoader(source)
+        loader = PDFPlumberLoader(source)
     elif source_type == 'url':
         loader = WebBaseLoader(source)
+    elif source_type == 'txt':
+        loader = TextLoader(source)
+    elif source_type == 'csv':
+        loader = CSVLoader(source)
     else:
-        raise ValueError("Unsupported source type")
+        raise ValueError(f"Unsupported source type: {source_type}")
 
     docs = loader.load()
     

@@ -60,13 +60,16 @@ async def ingest_file(bot_id: int, file: UploadFile = File(...), db: AsyncSessio
             shutil.copyfileobj(file.file, file_object)
         
         # Determine source type
-        source_type = "pdf" if file.filename.endswith(".pdf") else "csv"
+        ext = file.filename.split(".")[-1].lower() if "." in file.filename else "txt"
+        source_type = ext
         chunks = process_file_or_url(source=file_location, source_type=source_type, bot_id=bot_id)
         await add_chunks_to_vector_db(chunks)
         
         os.remove(file_location)
         return {"status": "success", "message": f"Ingested {file.filename} into {len(chunks)} chunks"}
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         if os.path.exists(file_location):
             os.remove(file_location)
         raise HTTPException(status_code=500, detail=str(e))

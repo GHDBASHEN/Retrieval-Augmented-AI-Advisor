@@ -1,7 +1,7 @@
 import os
 from typing import List, Dict
 from pinecone import Pinecone
-from langchain_openai import OpenAIEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 import uuid
 
 # Initialize Pinecone
@@ -13,7 +13,7 @@ try:
 except Exception:
     index = None
 
-embeddings = OpenAIEmbeddings(api_key=os.environ.get("OPENAI_API_KEY", "dummy_key"))
+embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 async def add_chunks_to_vector_db(chunks: List[Dict]):
     """Embed chunks and insert into Pinecone."""
