@@ -16,7 +16,7 @@ class Bot(Base):
     __tablename__ = "bots"
     
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
+    name = Column(String, unique=True, index=True)
     description = Column(Text, nullable=True)
     owner_id = Column(Integer, ForeignKey("users.id"))
     

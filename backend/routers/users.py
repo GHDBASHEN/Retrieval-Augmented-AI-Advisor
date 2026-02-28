@@ -40,3 +40,11 @@ async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+@router.post("/login", response_model=UserResponse)
+async def login_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.email == user.email))
+    existing_user = result.scalars().first()
+    if not existing_user:
+        raise HTTPException(status_code=404, detail="User not found. Please register.")
+    return existing_user

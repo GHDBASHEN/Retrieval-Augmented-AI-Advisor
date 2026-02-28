@@ -6,31 +6,37 @@ from typing import List, Optional
 
 from database import get_db
 from models import Bot, User
+from dependencies import get_current_user
+from sqlalchemy.exc import IntegrityError
 
 router = APIRouter(prefix="/bots", tags=["Bots"])
 
 class BotCreate(BaseModel):
     name: str
     description: Optional[str] = None
-    owner_id: int
 
 class BotResponse(BotCreate):
     id: int
+    owner_id: int
 
     class Config:
         from_attributes = True
 
 @router.post("/", response_model=BotResponse)
-async def create_bot(bot: BotCreate, db: AsyncSession = Depends(get_db)):
-    new_bot = Bot(**bot.model_dump())
-    db.add(new_bot)
-    await db.commit()
-    await db.refresh(new_bot)
-    return new_bot
+async def create_bot(bot: BotCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    try:
+        new_bot = Bot(**bot.model_dump(), owner_id=current_user.id)
+        db.add(new_bot)
+        await db.commit()
+        await db.refresh(new_bot)
+        return new_bot
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="A bot with this name already exists. Please choose a unique name.")
 
 @router.get("/", response_model=List[BotResponse])
-async def list_bots(owner_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Bot).where(Bot.owner_id == owner_id))
+async def list_bots(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    result = await db.execute(select(Bot).where(Bot.owner_id == current_user.id))
     return result.scalars().all()
 
 from services.ingestion import process_file_or_url
@@ -42,7 +48,12 @@ class IngestUrlRequest(BaseModel):
     url: str
 
 @router.post("/{bot_id}/ingest-url")
-async def ingest_url(bot_id: int, request: IngestUrlRequest, db: AsyncSession = Depends(get_db)):
+async def ingest_url(bot_id: int, request: IngestUrlRequest, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Verify bot ownership
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.owner_id == current_user.id))
+    if not result.scalars().first():
+        raise HTTPException(status_code=404, detail="Bot not found")
+        
     # Very simple ingestion flow
     try:
         chunks = process_file_or_url(source=request.url, source_type="url", bot_id=bot_id)
@@ -52,7 +63,12 @@ async def ingest_url(bot_id: int, request: IngestUrlRequest, db: AsyncSession = 
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/{bot_id}/ingest-file")
-async def ingest_file(bot_id: int, file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
+async def ingest_file(bot_id: int, file: UploadFile = File(...), db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Verify bot ownership
+    result = await db.execute(select(Bot).where(Bot.id == bot_id, Bot.owner_id == current_user.id))
+    if not result.scalars().first():
+        raise HTTPException(status_code=404, detail="Bot not found")
+        
     try:
         # Save temp file
         file_location = f"temp_{file.filename}"

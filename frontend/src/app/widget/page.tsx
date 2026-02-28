@@ -11,6 +11,7 @@ type Message = {
 function ChatInterface() {
     const searchParams = useSearchParams();
     const botId = searchParams.get('botId') || '1';
+    const apiKey = searchParams.get('apiKey') || '';
 
     const [messages, setMessages] = useState<Message[]>([
         { id: '1', role: 'assistant', content: 'Hello! I am your custom AI assistant. How can I help you today?' }
@@ -39,7 +40,10 @@ function ChatInterface() {
         try {
             const response = await fetch(`http://localhost:8000/conversations/${botId}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': apiKey
+                },
                 body: JSON.stringify({ user_query: userMessage })
             });
             const data = await response.json();
