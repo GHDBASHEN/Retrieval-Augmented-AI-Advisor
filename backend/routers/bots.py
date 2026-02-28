@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from pydantic import BaseModel
@@ -35,6 +35,8 @@ async def list_bots(owner_id: int, db: AsyncSession = Depends(get_db)):
 
 from services.ingestion import process_file_or_url
 from services.vector_store import add_chunks_to_vector_db
+import shutil
+import os
 
 class IngestUrlRequest(BaseModel):
     url: str
@@ -47,4 +49,24 @@ async def ingest_url(bot_id: int, request: IngestUrlRequest, db: AsyncSession = 
         await add_chunks_to_vector_db(chunks)
         return {"status": "success", "message": f"Ingested URL into {len(chunks)} chunks"}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{bot_id}/ingest-file")
+async def ingest_file(bot_id: int, file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
+    try:
+        # Save temp file
+        file_location = f"temp_{file.filename}"
+        with open(file_location, "wb+") as file_object:
+            shutil.copyfileobj(file.file, file_object)
+        
+        # Determine source type
+        source_type = "pdf" if file.filename.endswith(".pdf") else "csv"
+        chunks = process_file_or_url(source=file_location, source_type=source_type, bot_id=bot_id)
+        await add_chunks_to_vector_db(chunks)
+        
+        os.remove(file_location)
+        return {"status": "success", "message": f"Ingested {file.filename} into {len(chunks)} chunks"}
+    except Exception as e:
+        if os.path.exists(file_location):
+            os.remove(file_location)
         raise HTTPException(status_code=500, detail=str(e))
