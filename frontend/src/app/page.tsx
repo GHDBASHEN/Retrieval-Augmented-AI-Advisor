@@ -8,6 +8,7 @@ export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [isTraining, setIsTraining] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
+  const [createdBotId, setCreatedBotId] = useState<number | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -42,6 +43,7 @@ export default function Home() {
       });
       const botData = await botRes.json();
       const botId = botData.id;
+      setCreatedBotId(botId);
 
       // 3. Upload file if exists
       if (file) {
@@ -181,7 +183,7 @@ export default function Home() {
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/20 via-black/50 to-purple-950/20 pointer-events-none" />
 
             <div className="relative z-10 w-full max-w-[400px] h-full bg-black rounded-2xl border border-white/10 shadow-2xl overflow-hidden shadow-indigo-500/10">
-              <iframe src="/widget" className="w-full h-full border-none rounded-2xl" />
+              <iframe src={createdBotId ? `/widget?botId=${createdBotId}` : "/widget"} className="w-full h-full border-none rounded-2xl" />
             </div>
           </div>
         </div>

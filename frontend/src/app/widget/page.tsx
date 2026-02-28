@@ -1,5 +1,6 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 type Message = {
     id: string;
@@ -7,7 +8,10 @@ type Message = {
     content: string;
 }
 
-export default function ChatWidget() {
+function ChatInterface() {
+    const searchParams = useSearchParams();
+    const botId = searchParams.get('botId') || '1';
+
     const [messages, setMessages] = useState<Message[]>([
         { id: '1', role: 'assistant', content: 'Hello! I am your custom AI assistant. How can I help you today?' }
     ]);
@@ -32,15 +36,37 @@ export default function ChatWidget() {
         setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', content: userMessage }]);
         setIsTyping(true);
 
-        // TODO: Actually make the API call to backend /conversations router
-        setTimeout(() => {
-            setIsTyping(false);
+        try {
+            const response = await fetch(`http://localhost:8000/conversations/${botId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_query: userMessage })
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    role: 'assistant',
+                    content: data.bot_response
+                }]);
+            } else {
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    role: 'assistant',
+                    content: "Sorry, I encountered an error communicating with the server."
+                }]);
+            }
+        } catch (error) {
+            console.error("Chat error:", error);
             setMessages(prev => [...prev, {
                 id: Date.now().toString(),
                 role: 'assistant',
-                content: "This is a placeholder response from the RAG engine. Real generation requires the backend to be fully running with valid API keys.\n\n**Sources:**\n- https://example.com/docs"
+                content: "Sorry, I couldn't connect to the server."
             }]);
-        }, 1500);
+        } finally {
+            setIsTyping(false);
+        }
     };
 
     return (
@@ -58,8 +84,8 @@ export default function ChatWidget() {
                 {messages.map(msg => (
                     <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${msg.role === 'user'
-                                ? 'bg-indigo-600 text-white rounded-tr-sm shadow-md'
-                                : 'bg-white/5 border border-white/10 text-neutral-200 rounded-tl-sm shadow-sm'
+                            ? 'bg-indigo-600 text-white rounded-tr-sm shadow-md'
+                            : 'bg-white/5 border border-white/10 text-neutral-200 rounded-tl-sm shadow-sm'
                             }`}>
                             <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
                         </div>
@@ -99,5 +125,13 @@ export default function ChatWidget() {
                 </form>
             </div>
         </div>
+    );
+}
+
+export default function ChatWidget() {
+    return (
+        <Suspense fallback={<div className="text-white p-4">Loading widget...</div>}>
+            <ChatInterface />
+        </Suspense>
     );
 }
