@@ -49,6 +49,16 @@ export default function Home() {
     }
   }, [selectedBotId, apiKey]);
 
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setEmail('');
+    setPassword('');
+    setApiKey('');
+    setBots([]);
+    setSelectedBotId(null);
+    setChatHistory([]);
+  };
+
   const handleRegisterOrLogin = async () => {
     if (!email) return;
     try {
@@ -150,8 +160,14 @@ export default function Home() {
             <h1 className="text-xl font-semibold tracking-tight text-white drop-shadow-sm">RAG as a Service</h1>
           </div>
           {isLoggedIn && (
-            <div className="text-sm text-neutral-400">
-              {email}
+            <div className="flex items-center gap-4 text-sm text-neutral-400">
+              <span className="opacity-80">{email}</span>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all font-medium text-xs"
+              >
+                Logout
+              </button>
             </div>
           )}
         </div>
