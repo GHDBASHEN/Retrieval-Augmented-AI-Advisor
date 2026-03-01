@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
+import { api } from '../lib/api';
 
 export default function Home() {
   const [botName, setBotName] = useState('');
@@ -23,9 +24,7 @@ export default function Home() {
 
   const fetchBots = async (key: string) => {
     try {
-      const res = await fetch('http://localhost:8000/bots/', {
-        headers: { 'X-API-Key': key }
-      });
+      const res = await api.getBots(key);
       if (res.ok) {
         setBots(await res.json());
       }
@@ -34,9 +33,7 @@ export default function Home() {
 
   const fetchHistory = async (botId: number, key: string) => {
     try {
-      const res = await fetch(`http://localhost:8000/conversations/${botId}/history`, {
-        headers: { 'X-API-Key': key }
-      });
+      const res = await api.getHistory(botId, key);
       if (res.ok) {
         setChatHistory(await res.json());
       }
@@ -62,12 +59,9 @@ export default function Home() {
   const handleRegisterOrLogin = async () => {
     if (!email) return;
     try {
-      const endpoint = isLoginMode ? 'http://localhost:8000/users/login' : 'http://localhost:8000/users/';
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
+      const res = isLoginMode
+        ? await api.login(email, password)
+        : await api.register(email, password);
       if (res.ok) {
         const data = await res.json();
         setApiKey(data.api_key);
@@ -91,14 +85,7 @@ export default function Home() {
     setIsTraining(true);
     setStatusMsg('Creating bot in database...');
     try {
-      const botRes = await fetch('http://localhost:8000/bots/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': apiKey
-        },
-        body: JSON.stringify({ name: botName, description })
-      });
+      const botRes = await api.createBot(botName, description, apiKey);
 
       if (!botRes.ok) {
         const errData = await botRes.json();
@@ -111,27 +98,14 @@ export default function Home() {
       if (files.length > 0) {
         for (const f of files) {
           setStatusMsg(`Uploading and parsing ${f.name}...`);
-          const formData = new FormData();
-          formData.append('file', f);
-          const fileRes = await fetch(`http://localhost:8000/bots/${botId}/ingest-file`, {
-            method: 'POST',
-            headers: { 'X-API-Key': apiKey },
-            body: formData
-          });
+          const fileRes = await api.ingestFile(botId, f, apiKey);
           if (!fileRes.ok) throw new Error(`Failed to process file ${f.name}`);
         }
       }
 
       if (url) {
         setStatusMsg(`Scraping and processing URL...`);
-        const urlRes = await fetch(`http://localhost:8000/bots/${botId}/ingest-url`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-API-Key': apiKey
-          },
-          body: JSON.stringify({ url })
-        });
+        const urlRes = await api.ingestUrl(botId, url, apiKey);
         if (!urlRes.ok) throw new Error("Failed to process URL");
       }
 

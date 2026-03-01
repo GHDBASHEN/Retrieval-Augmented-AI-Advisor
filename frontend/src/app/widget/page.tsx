@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { api } from '../../lib/api';
 
 type Message = {
     id: string;
@@ -38,14 +39,7 @@ function ChatInterface() {
         setIsTyping(true);
 
         try {
-            const response = await fetch(`http://localhost:8000/conversations/${botId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-API-Key': apiKey
-                },
-                body: JSON.stringify({ user_query: userMessage })
-            });
+            const response = await api.chat(botId, userMessage, apiKey);
             const data = await response.json();
 
             if (response.ok) {
