@@ -3,6 +3,11 @@ version: '3.8'
 services:
   db:
     image: postgres:15-alpine
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag_user -d rag_platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: always
     environment:
       POSTGRES_USER: rag_user
@@ -24,8 +29,8 @@ services:
       - PINECONE_INDEX_NAME=rag-bots
       - GROQ_API_KEY=${GROQ_API_KEY}
     depends_on:
-      - db
-
+      db:
+        condition: service_healthy
   frontend:
     build: ./frontend
     restart: always
