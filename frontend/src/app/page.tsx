@@ -86,7 +86,7 @@ const ChatPreviewWidget = () => {
 
 export default function Home() {
   const [navOpen, setNavOpen] = useState(false);
-  
+
   // --- STATE MANAGEMENT ---
   const [botName, setBotName] = useState('');
   const [description, setDescription] = useState('');
@@ -151,7 +151,7 @@ export default function Home() {
     try {
       const botRes = await api.createBot(botName, description, apiKey);
       if (!botRes.ok) throw new Error((await botRes.json()).detail || "Failed to create bot");
-      
+
       const botId = (await botRes.json()).id;
       if (files.length > 0) {
         for (const f of files) {
@@ -174,7 +174,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary/30 relative overflow-hidden scroll-smooth">
-      
+
       {/* NAVBAR */}
       <motion.nav
         initial={{ y: -20, opacity: 0 }}
@@ -183,7 +183,7 @@ export default function Home() {
         className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl"
       >
         <div className="container mx-auto flex h-16 items-center justify-between px-6 max-w-[1400px]">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo(0,0)}>
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 glow-border">
               <Bot className="h-4 w-4 text-primary" />
             </div>
@@ -226,7 +226,7 @@ export default function Home() {
         <main className="flex-1 relative z-10 w-full overflow-y-auto pt-16">
           <div className="absolute inset-0 gradient-mesh" />
           <div className="absolute inset-0 grid-pattern opacity-30" />
-          
+
           <motion.div
             className="absolute top-1/4 left-1/2 -translate-x-1/2 h-[500px] w-[500px] rounded-full opacity-20 pointer-events-none"
             style={{ background: "radial-gradient(circle, hsl(175 80% 50% / 0.3) 0%, transparent 70%)" }}
@@ -238,7 +238,7 @@ export default function Home() {
           <section className="relative pt-16 pb-20">
             <div className="container relative mx-auto px-6 pt-12 pb-20 lg:pt-24 max-w-[1400px]">
               <div className="grid items-center gap-16 lg:grid-cols-2">
-                
+
                 <div className="max-w-xl">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
@@ -361,7 +361,7 @@ export default function Home() {
                 </h2>
                 <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">Watch how the RAG Advisor provides precise, cited answers from uploaded documents.</p>
               </motion.div>
-              
+
               <ChatPreviewWidget />
             </div>
           </section>
@@ -476,7 +476,7 @@ export default function Home() {
                     <p className="text-xs text-primary uppercase font-bold tracking-wider mb-2">Integration Code Snippet</p>
                     <div className="bg-background border border-primary/20 rounded-lg p-4 overflow-x-auto">
                       <pre className="text-xs font-mono text-primary/80">
-{`const response = await fetch('http://localhost:8000/conversations/${selectedBotId}', {
+                        {`const response = await fetch('http://40.90.226.80:8000/conversations/${selectedBotId}', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -515,7 +515,7 @@ console.log(data.bot_response);`}
                     <iframe src={`/widget?botId=${selectedBotId}&apiKey=${apiKey}`} className="w-full h-full border-none rounded-2xl bg-background" />
                   ) : (
                     <div className="text-muted-foreground text-sm text-center px-8 font-medium">
-                      <div className="w-12 h-12 rounded-full border border-primary/20 bg-primary/5 mx-auto mb-4 flex items-center justify-center text-primary text-xl"><Bot size={24}/></div>
+                      <div className="w-12 h-12 rounded-full border border-primary/20 bg-primary/5 mx-auto mb-4 flex items-center justify-center text-primary text-xl"><Bot size={24} /></div>
                       Select a bot or create a new one to test it here.
                     </div>
                   )}

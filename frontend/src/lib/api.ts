@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'http://40.90.226.80:8000';
 
 export const api = {
     login: (email: string, password: string) => {
