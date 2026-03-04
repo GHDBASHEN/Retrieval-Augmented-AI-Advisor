@@ -3,7 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from pydantic import BaseModel
 import secrets
-import bcrypt
+import hashlib
+import os
 
 from database import get_db
 from models import User
@@ -29,8 +30,10 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
         
-    salt = bcrypt.gensalt()
-    hashed_pwd = bcrypt.hashpw(user.password.encode('utf-8'), salt).decode('utf-8')
+    salt = os.urandom(16)
+    hashed_pwd_bytes = hashlib.pbkdf2_hmac('sha256', user.password.encode('utf-8'), salt, 100000)
+    # Store salt and hash together as hex
+    hashed_pwd = salt.hex() + ':' + hashed_pwd_bytes.hex()
     api_key = secrets.token_urlsafe(32)
     new_user = User(email=user.email, hashed_password=hashed_pwd, api_key=api_key)
     db.add(new_user)
@@ -50,6 +53,18 @@ async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):
 async def login_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == user.email))
     existing_user = result.scalars().first()
-    if not existing_user or not bcrypt.checkpw(user.password.encode('utf-8'), existing_user.hashed_password.encode('utf-8')):
+    if not existing_user:
         raise HTTPException(status_code=401, detail="Invalid email or password.")
+        
+    try:
+        stored_salt_hex, stored_hash_hex = existing_user.hashed_password.split(':')
+        stored_salt = bytes.fromhex(stored_salt_hex)
+        expected_hash = bytes.fromhex(stored_hash_hex)
+        actual_hash = hashlib.pbkdf2_hmac('sha256', user.password.encode('utf-8'), stored_salt, 100000)
+        
+        if not secrets.compare_digest(actual_hash, expected_hash):
+            raise ValueError("Password mismatch")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+
     return existing_user
