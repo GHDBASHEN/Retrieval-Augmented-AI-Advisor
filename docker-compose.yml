@@ -35,9 +35,9 @@ services:
     build: ./frontend
     restart: always
     ports:
-      - "3000:3000"
+      - "8080:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://<your-azure-vm-ip>:8000
+      - NEXT_PUBLIC_API_URL=http://40.90.226.80:8000
     depends_on:
       - backend
 
