@@ -17,4 +17,3 @@ pdfplumber==0.11.0
 pytest==8.1.1
 torch>=2.4.0
 bcrypt==3.2.2
-passlib[bcrypt]==1.7.4

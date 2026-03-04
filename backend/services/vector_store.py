@@ -13,7 +13,14 @@ try:
 except Exception:
     index = None
 
-embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+_embeddings = None
+
+def get_embeddings():
+    global _embeddings
+    if _embeddings is None:
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+        _embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    return _embeddings
 
 async def add_chunks_to_vector_db(chunks: List[Dict]):
     """Embed chunks and insert into Pinecone."""
@@ -25,7 +32,7 @@ async def add_chunks_to_vector_db(chunks: List[Dict]):
     metadatas = [c["metadata"] for c in chunks]
     
     # Generate vectors
-    vectors = embeddings.embed_documents(texts)
+    vectors = get_embeddings().embed_documents(texts)
     
     upsert_data = []
     for i, vector in enumerate(vectors):
@@ -48,7 +55,7 @@ async def search_vector_db(query: str, bot_id: int, top_k: int = 5) -> List[Dict
     if not index:
         return []
         
-    query_vector = embeddings.embed_query(query)
+    query_vector = get_embeddings().embed_query(query)
     
     try:
         results = index.query(
