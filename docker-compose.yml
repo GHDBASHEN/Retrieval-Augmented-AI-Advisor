@@ -4,7 +4,7 @@ services:
   db:
     image: postgres:15-alpine
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U rag_user -d rag_platform"]
+      test: [ "CMD-SHELL", "pg_isready -U rag_user -d rag_platform" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -35,7 +35,7 @@ services:
     build: ./frontend
     restart: always
     ports:
-      - "8080:3000"
+      - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://40.90.226.80:8000
     depends_on:
