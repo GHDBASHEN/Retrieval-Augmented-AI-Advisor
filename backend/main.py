@@ -15,7 +15,10 @@ app = FastAPI(
 # Allow CORS for the frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Update this in production
+    allow_origins=[
+        "http://localhost:3000",
+        "https://retrieval-augmented-ai-advisor.vercel.app" # Your actual Vercel URL
+    ], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
